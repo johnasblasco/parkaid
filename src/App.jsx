@@ -18,7 +18,7 @@ const App = () => {
       };
 
       const recognizeText = async (imageBase64) => {
-            const apiKey = 'YOUR_API_KEY';
+            const apiKey = 'K82741021788957';
             const formData = new FormData();
             formData.append('base64Image', `data:image/jpeg;base64,${imageBase64}`);
             formData.append('apikey', apiKey);
