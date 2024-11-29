@@ -7,6 +7,7 @@ const App = () => {
       const [recognizedText, setRecognizedText] = useState('');
       const [vehicleData, setVehicleData] = useState(null); // Stores data for matched vehicle
       const [category, setCategory] = useState('4 Wheels'); // Default category
+      const [loading, setLoading] = useState(false); // Loading state
       const webcamRef = useRef(null);
 
       const videoConstraints = {
@@ -26,6 +27,7 @@ const App = () => {
             formData.append('OCREngine', '2');
 
             try {
+                  setLoading(true); // Set loading to true
                   const response = await axios.post(
                         'https://api.ocr.space/parse/image',
                         formData,
@@ -41,78 +43,31 @@ const App = () => {
             } catch (error) {
                   console.error('OCR Error:', error.response?.data || error.message);
                   setRecognizedText('Error during OCR recognition.');
+            } finally {
+                  setLoading(false); // Set loading to false
             }
       };
 
       const checkPlateInSystem = async (plateNumber) => {
             try {
-                  // Fetch all vehicles from the API
                   const response = await axios.get('https://capstone-parking.onrender.com/vehicle');
-
                   if (response.data && Array.isArray(response.data)) {
-                        // Filter vehicles where status is true (currently parked in)
                         const parkedInVehicles = response.data.filter(vehicle => vehicle.status === true);
-
-                        // Find a vehicle with the matching plate number
                         const matchedVehicle = parkedInVehicles.find(vehicle => vehicle.plateNumber === plateNumber);
 
                         if (matchedVehicle) {
-                              setVehicleData(matchedVehicle); // Vehicle exists and is parked in
+                              setVehicleData(matchedVehicle);
                         } else {
-                              setVehicleData(null); // Vehicle not found or not parked in
+                              setVehicleData(null);
                         }
                   } else {
-                        setVehicleData(null); // If response is not an array or empty
-                  }
-            } catch (error) {
-                  console.error('Error checking plate:', error.message);
-                  setVehicleData(null); // Clear state in case of error
-            }
-      };
-
-
-      const handleParkIn = async () => {
-            const ticketNumber = Math.floor(100000 + Math.random() * 900000); // Generate 6-digit ticket number
-            const newVehicle = {
-                  ticketNumber,
-                  startDate: new Date().toISOString(),
-                  plateNumber: recognizedText,
-                  category,
-                  endDate: null,
-                  status: true,
-                  charges: category === '2 Wheels' ? 15 : 20,
-                  extraCharges: 0,
-            };
-
-            try {
-                  const response = await axios.post('https://capstone-parking.onrender.com/vehicle', newVehicle);
-                  if (response.data) {
-                        alert('Vehicle parked in successfully!');
-                        setVehicleData(response.data);
-                  }
-            } catch (error) {
-                  console.error('Error parking in:', error.message);
-            }
-      };
-
-
-      const handleParkOut = async () => {
-            if (!vehicleData) return;
-
-            try {
-                  const response = await axios.put(`https://capstone-parking.onrender.com/vehicle/${vehicleData._id}`, {
-                        endDate: new Date().toISOString(),
-                        status: false,
-                  });
-                  if (response.data) {
-                        alert('Vehicle parked out successfully!');
                         setVehicleData(null);
                   }
             } catch (error) {
-                  console.error('Error parking out:', error.message);
+                  console.error('Error checking plate:', error.message);
+                  setVehicleData(null);
             }
       };
-
 
       const handleCaptureAndRecognize = () => {
             if (imageSrc) {
@@ -149,9 +104,10 @@ const App = () => {
                               <img src={imageSrc} alt="Captured" className="rounded-lg border border-gray-300 mb-4" width={300} />
                               <button
                                     onClick={handleCaptureAndRecognize}
-                                    className="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded"
+                                    className={`bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
+                                    disabled={loading}
                               >
-                                    Recognize Plate
+                                    {loading ? 'Recognizing...' : 'Recognize Plate'}
                               </button>
                         </div>
                   )}
