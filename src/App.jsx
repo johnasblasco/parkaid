@@ -111,10 +111,29 @@ const App = () => {
                   if (response.data) {
                         alert('Vehicle parked in successfully!');
                         setVehicleData(response.data);
+
+                        // Calculate earnings based on category (you can adjust based on actual criteria)
+                        const earningsAmount = category === '2 Wheels' ? 15 : 20;
+
+                        // Prepare earnings data
+                        const earningsData = {
+                              currentDate: new Date().toISOString(),
+                              earnings: earningsAmount,
+                        };
+
+                        // Post earnings data
+                        const earningsResponse = await axios.post('https://capstone-parking.onrender.com/earnings', earningsData);
+                        if (earningsResponse.data) {
+                              console.log('Earnings posted:', earningsResponse.data);
+                        } else {
+                              console.error('Failed to post earnings.');
+                        }
                   }
             } catch (error) {
                   console.error('Error parking in:', error.message);
             }
+
+
       };
 
       // Handle the "Park Out" operation
