@@ -3,22 +3,24 @@ import Webcam from 'react-webcam';
 import axios from 'axios';
 
 const App = () => {
-      const [imageSrc, setImageSrc] = useState(null);
-      const [recognizedText, setRecognizedText] = useState('');
-      const [vehicleData, setVehicleData] = useState(null); // Stores data for matched vehicle
-      const [category, setCategory] = useState('4 Wheels'); // Default category
-      const [loading, setLoading] = useState(false); // Loading state
+      const [imageSrc, setImageSrc] = useState(null); // Captured image
+      const [recognizedText, setRecognizedText] = useState(''); // OCR result
+      const [vehicleData, setVehicleData] = useState(null); // Vehicle match data
+      const [category, setCategory] = useState('4 Wheels'); // Default vehicle category
+      const [loading, setLoading] = useState(false); // Loading indicator
       const webcamRef = useRef(null);
 
       const videoConstraints = {
             facingMode: { exact: 'environment' },
       };
 
+      // Capture image from webcam
       const capture = () => {
             const imageSrc = webcamRef.current.getScreenshot();
             setImageSrc(imageSrc);
       };
 
+      // Perform OCR to recognize text
       const recognizeText = async (imageBase64) => {
             const apiKey = 'K82741021788957';
             const formData = new FormData();
@@ -27,16 +29,29 @@ const App = () => {
             formData.append('OCREngine', '2');
 
             try {
+                  console.log('Starting OCR recognition...');
                   setLoading(true); // Set loading to true
+
                   const response = await axios.post(
                         'https://api.ocr.space/parse/image',
                         formData,
                         { headers: { 'Content-Type': 'multipart/form-data' } }
                   );
+
+                  console.log('OCR response:', response.data);
+
                   if (response.data.ParsedResults && response.data.ParsedResults.length > 0) {
                         const detectedPlate = response.data.ParsedResults[0].ParsedText.trim();
                         setRecognizedText(detectedPlate);
-                        checkPlateInSystem(detectedPlate);
+                        console.log('Detected Plate:', detectedPlate);
+
+                        // Proceed to check the detected plate
+                        if (detectedPlate) {
+                              checkPlateInSystem(detectedPlate);
+                        } else {
+                              console.error('Empty or invalid detected plate.');
+                              setRecognizedText('No text detected.');
+                        }
                   } else {
                         setRecognizedText('No text detected.');
                   }
@@ -44,31 +59,88 @@ const App = () => {
                   console.error('OCR Error:', error.response?.data || error.message);
                   setRecognizedText('Error during OCR recognition.');
             } finally {
-                  setLoading(false); // Set loading to false
+                  setLoading(false); // Always reset loading state
             }
       };
 
+      // Check if the recognized plate is already in the system
       const checkPlateInSystem = async (plateNumber) => {
             try {
+                  console.log(`Checking plate in the system: ${plateNumber}`);
                   const response = await axios.get('https://capstone-parking.onrender.com/vehicle');
+
                   if (response.data && Array.isArray(response.data)) {
                         const parkedInVehicles = response.data.filter(vehicle => vehicle.status === true);
                         const matchedVehicle = parkedInVehicles.find(vehicle => vehicle.plateNumber === plateNumber);
 
                         if (matchedVehicle) {
+                              console.log('Vehicle found:', matchedVehicle);
                               setVehicleData(matchedVehicle);
                         } else {
+                              console.log('No matching vehicle found.');
                               setVehicleData(null);
                         }
                   } else {
+                        console.error('Invalid or empty response from the API.');
                         setVehicleData(null);
                   }
             } catch (error) {
                   console.error('Error checking plate:', error.message);
-                  setVehicleData(null);
+                  setVehicleData(null); // Clear data in case of error
             }
       };
 
+      // Handle the "Park In" operation
+      const handleParkIn = async () => {
+            const ticketNumber = Math.floor(100000 + Math.random() * 900000); // Generate random ticket number
+            const newVehicle = {
+                  ticketNumber,
+                  startDate: new Date().toISOString(),
+                  plateNumber: recognizedText,
+                  category,
+                  endDate: null,
+                  status: true,
+                  charges: category === '2 Wheels' ? 15 : 20,
+                  extraCharges: 0,
+            };
+
+            try {
+                  console.log('Parking in new vehicle:', newVehicle);
+                  const response = await axios.post('https://capstone-parking.onrender.com/vehicle', newVehicle);
+
+                  if (response.data) {
+                        alert('Vehicle parked in successfully!');
+                        setVehicleData(response.data);
+                  }
+            } catch (error) {
+                  console.error('Error parking in:', error.message);
+            }
+      };
+
+      // Handle the "Park Out" operation
+      const handleParkOut = async () => {
+            if (!vehicleData) return;
+
+            try {
+                  console.log('Parking out vehicle:', vehicleData);
+                  const response = await axios.put(
+                        `https://capstone-parking.onrender.com/vehicle/${vehicleData._id}`,
+                        {
+                              endDate: new Date().toISOString(),
+                              status: false,
+                        }
+                  );
+
+                  if (response.data) {
+                        alert('Vehicle parked out successfully!');
+                        setVehicleData(null); // Clear vehicle data
+                  }
+            } catch (error) {
+                  console.error('Error parking out:', error.message);
+            }
+      };
+
+      // Handle capture and recognition
       const handleCaptureAndRecognize = () => {
             if (imageSrc) {
                   const base64Image = imageSrc.split(',')[1];
