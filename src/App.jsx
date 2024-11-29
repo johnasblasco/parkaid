@@ -46,14 +46,27 @@ const App = () => {
 
       const checkPlateInSystem = async (plateNumber) => {
             try {
-                  const response = await axios.get(`https://capstone-parking.onrender.com/vehicle?plateNumber=${plateNumber}`);
-                  if (response.data) {
-                        setVehicleData(response.data);
+                  // Fetch all vehicles from the API
+                  const response = await axios.get('https://capstone-parking.onrender.com/vehicle');
+
+                  if (response.data && Array.isArray(response.data)) {
+                        // Filter vehicles where status is true (currently parked in)
+                        const parkedInVehicles = response.data.filter(vehicle => vehicle.status === true);
+
+                        // Find a vehicle with the matching plate number
+                        const matchedVehicle = parkedInVehicles.find(vehicle => vehicle.plateNumber === plateNumber);
+
+                        if (matchedVehicle) {
+                              setVehicleData(matchedVehicle); // Vehicle exists and is parked in
+                        } else {
+                              setVehicleData(null); // Vehicle not found or not parked in
+                        }
                   } else {
-                        setVehicleData(null);
+                        setVehicleData(null); // If response is not an array or empty
                   }
             } catch (error) {
                   console.error('Error checking plate:', error.message);
+                  setVehicleData(null); // Clear state in case of error
             }
       };
 
@@ -62,9 +75,10 @@ const App = () => {
             const ticketNumber = Math.floor(100000 + Math.random() * 900000); // Generate 6-digit ticket number
             const newVehicle = {
                   ticketNumber,
+                  startDate: new Date().toISOString(),
                   plateNumber: recognizedText,
                   category,
-                  startDate: new Date().toISOString(),
+                  endDate: null,
                   status: true,
                   charges: category === '2 Wheels' ? 15 : 20,
                   extraCharges: 0,
