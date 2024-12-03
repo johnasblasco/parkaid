@@ -1,6 +1,7 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import Webcam from 'react-webcam';
 import axios from 'axios';
+
 
 const App = () => {
       const [imageSrc, setImageSrc] = useState(null); // Captured image
@@ -10,9 +11,22 @@ const App = () => {
       const [loading, setLoading] = useState(false); // Loading indicator
       const webcamRef = useRef(null);
 
+      const [devices, setDevices] = useState([]);
+      const [selectedDeviceId, setSelectedDeviceId] = useState('');
+
+
+      useEffect(() => {
+            navigator.mediaDevices.enumerateDevices().then((mediaDevices) => {
+                  const videoDevices = mediaDevices.filter(device => device.kind === 'videoinput');
+                  setDevices(videoDevices);
+                  if (videoDevices.length > 0) setSelectedDeviceId(videoDevices[0].deviceId);
+            });
+      }, []);
+
       const videoConstraints = {
-            facingMode: { exact: 'environment' },
+            deviceId: selectedDeviceId ? { exact: selectedDeviceId } : undefined,
       };
+
 
       // Capture image from webcam
       const capture = () => {
@@ -170,6 +184,21 @@ const App = () => {
       return (
             <div className="flex flex-col items-center justify-center min-h-screen bg-gray-100 p-4">
                   <h1 className="text-3xl font-bold mb-6 text-gray-800">Parking Plate Detection</h1>
+
+                  <div className="mb-4">
+                        <label className="block text-gray-700 mb-2">Select Camera:</label>
+                        <select
+                              className="border border-gray-300 rounded p-2"
+                              value={selectedDeviceId}
+                              onChange={(e) => setSelectedDeviceId(e.target.value)}
+                        >
+                              {devices.map((device) => (
+                                    <option key={device.deviceId} value={device.deviceId}>
+                                          {device.label || `Camera ${device.deviceId}`}
+                                    </option>
+                              ))}
+                        </select>
+                  </div>
 
                   <div className="bg-white shadow-lg rounded-lg p-4 mb-6">
                         <Webcam
