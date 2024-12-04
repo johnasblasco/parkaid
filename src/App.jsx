@@ -238,38 +238,23 @@ const App = () => {
                               <pre className="text-lg text-gray-900">{recognizedText}</pre>
                               {!vehicleData ? (
                                     <>
-                                          <div className="flex justify-center mt-4">
-                                                <label className="mr-4 text-gray-700">
-                                                      <input
-                                                            type="radio"
-                                                            value="2 Wheels"
-                                                            checked={category === '2 Wheels'}
-                                                            onChange={() => setCategory('2 Wheels')}
-                                                            className="mr-1"
-                                                      />
-                                                      2 Wheels
-                                                </label>
-                                                <label className="mr-4 text-gray-700">
-                                                      <input
-                                                            type="radio"
-                                                            value="3 Wheels"
-                                                            checked={category === '3 Wheels'}
-                                                            onChange={() => setCategory('3 Wheels')}
-                                                            className="mr-1"
-                                                      />
-                                                      3 Wheels
-                                                </label>
-                                                <label className="text-gray-700">
-                                                      <input
-                                                            type="radio"
-                                                            value="4 Wheels"
-                                                            checked={category === '4 Wheels'}
-                                                            onChange={() => setCategory('4 Wheels')}
-                                                            className="mr-1"
-                                                      />
-                                                      4 Wheels
-                                                </label>
+                                          <div className="flex justify-center mt-4 space-x-4">
+                                                {['2 Wheels', '3 Wheels', '4 Wheels'].map((cat) => (
+                                                      <label key={cat} className="text-gray-700">
+                                                            <input
+                                                                  type="radio"
+                                                                  value={cat}
+                                                                  checked={category === cat}
+                                                                  onChange={() => setCategory(cat)}
+                                                                  className="mr-2"
+                                                            />
+                                                            {cat}
+                                                      </label>
+                                                ))}
                                           </div>
+                                          <p className="mt-2 text-gray-600">
+                                                Charges: <span className="font-bold">{category === '2 Wheels' ? '15' : '20'} pesos</span>
+                                          </p>
                                           <button
                                                 onClick={handleParkIn}
                                                 className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded mt-4"
